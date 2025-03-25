@@ -15,8 +15,8 @@ app.get('/products', (req, res) => {
 
 
 app.post('/products', (req, res) => {
-    const { name, size, color } = req.body;
-    products.push({id: products.length + 1, name, size, color});
+    const { name, size, status } = req.body;
+    products.push({id: products.length + 1, name, size, status});
 
     res.status(201).json().send();
 });
@@ -37,16 +37,16 @@ app.put('/products/:id', (req, res) => {
     
 });
 
-app.patch('/products/:id', (req, res) => {
+app.patch('/products/:id/status', (req, res) => {
     const { id } = req.params;
-    const { name, size, color } = req.body;
+    const { status } = req.body;
 
     const productIndex = products.findIndex(product => product.id == id);
     if (productIndex == -1) {
         return res.status(404).send();
     }
 
-    products[productIndex] = {...products[productIndex], name, size}
+    products[productIndex] = {...products[productIndex], status}
 
     return res.status(200).json().send();
 });
