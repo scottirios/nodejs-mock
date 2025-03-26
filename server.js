@@ -48,7 +48,7 @@ app.patch('/products/:id/status', (req, res) => {
 
     products[productIndex] = {...products[productIndex], status}
 
-    return res.status(200).json().send();
+    return res.status(200).json(products).send();
 });
 
 app.delete('/products', (req, res) => {
