@@ -1,6 +1,9 @@
 import express, { NextFunction, Request, Response } from "express";
 import { seedUserStore, users } from "./database";
 import { generateJwtAndRefreshToken } from "./auth";
+import { auth } from "./config";
+import jwt from "jsonwebtoken"
+import { DecodedToken } from "./types";
 
 const port = 3333;
 
@@ -12,17 +15,31 @@ seedUserStore()
 
 function checkAuthMiddleware(request: Request, response: Response, next: NextFunction) {
     const { authorization } = request.headers;
-    
+
     if (!authorization) {
         return response.status(401)
-            .json({error: true, code: 'token.invalid', message: 'Token not exists.'})
+            .json({ error: true, code: 'token.invalid', message: 'Token not exists.' })
     }
 
-    request.user = 'scotti@cesul.com.br';
+    const [, token] = authorization.split(' ');
 
-    console.log(authorization);
+    if (!token) {
+        return response
+            .status(401)
+            .json({ error: true, code: 'token.invalid', message: 'Token not exists.' })
+    }
 
-    return next();
+    try {
+        const decoded = jwt.verify(token, auth.secret) as DecodedToken;
+
+        request.user = decoded.sub;
+
+        return next();
+    } catch (error) {
+        return response
+            .status(401)
+            .json({ error: true, code: 'token.expired', message: 'Token invalid.' })
+    };
 }
 
 app.post('/sessions', (request, response) => {
@@ -45,15 +62,6 @@ app.post('/sessions', (request, response) => {
     return response.json({
         token
     });
-
-    // Pegar o Usuario e Senha - OK
-    // Buscar no banco de dados o usuario - OK
-    // Erro 401 quando não encontrar o usuario - OK
-    // Descriptografar a senha
-    // Verificar a senha informada com a senha do banco - OK
-    // Erro 401 quando não encontrar a senha - OK
-    // Gerar Token e o Refresh Token
-    // Retornar Token e Refresh Token - OK
 });
 
 
@@ -65,7 +73,7 @@ app.get('/me', checkAuthMiddleware, (request, response) => {
     if (!user) {
         return response
             .status(404)
-            .json({ error: true, message: 'User not found.'});
+            .json({ error: true, message: 'User not found.' });
     }
 
     return response.json({
@@ -75,6 +83,6 @@ app.get('/me', checkAuthMiddleware, (request, response) => {
     })
 });
 
-app.listen(port,() => {
+app.listen(port, () => {
     console.log(`Listening on port ${port}`);
 });
